@@ -1,6 +1,8 @@
+import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
 import 'package:flutter/services.dart';
+import 'package:http/http.dart' as http;
 import 'package:image/image.dart' as img;
 import 'package:od_demo_2/constants.dart';
 import 'package:od_demo_2/models/recognition.dart';
@@ -56,6 +58,8 @@ class ObjectDetection {
     );
 
     // Creating matrix representation, [300, 300, 3]
+
+    // Demo Model Input
     final imageMatrix = List.generate(
       imageInput.height,
       (y) => List.generate(
@@ -66,6 +70,18 @@ class ObjectDetection {
         },
       ),
     );
+
+    // Hocanın Model Input
+    // final imageMatrix = List.generate(
+    //   imageInput.height,
+    //   (y) => List.generate(
+    //     imageInput.width,
+    //     (x) {
+    //       final pixel = imageInput.getPixel(x, y);
+    //       return [pixel.r / 255, pixel.g / 255, pixel.b / 255];
+    //     },
+    //   ),
+    // );
 
     final output = await _runInference(imageMatrix);
 
@@ -111,7 +127,7 @@ class ObjectDetection {
     //       thickness: 3,
     //     );
 
-    //     // Label drawing
+    // Label drawing
     //     img.drawString(
     //       imageInput,
     //       '${classication[i]} ${scores[i]}',
@@ -123,7 +139,7 @@ class ObjectDetection {
     //   }
     // }
 
-    log('Done.');
+    // log('Done.');
 
     return List.generate(numberOfDetections, (i) {
       return Recognition(
@@ -155,8 +171,42 @@ class ObjectDetection {
     };
 
     _interpreter!.runForMultipleInputs([input], output);
-    //TODO: Remove delay, its only for debugging
-    await Future.delayed(const Duration(seconds: 1));
+    //  Remove delay, its only for debugging
+    // await Future.delayed(const Duration(seconds: 1));
+
+    return output.values.toList();
+  }
+
+  Future<List<dynamic>> _runInferenceOnAPI(
+    List<List<List<num>>> imageMatrix,
+  ) async {
+    log('Running inference...');
+
+    // Set input tensor [1, 300, 300, 3]
+    final input = [imageMatrix];
+
+    var response = await http.post(
+      Uri.parse(apiUrl),
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({"photo": input}),
+    );
+
+    // Parse the response
+    var responseData = jsonDecode(response.body);
+    log(response.statusCode.toString());
+
+    // Set output tensor
+    // Locations: [1, 10, 4]
+    // Classes: [1, 10],
+    // Scores: [1, 10],
+    // Number of detections: [1]
+    final output = {
+      0: responseData['locations'],
+      1: responseData['classes'],
+      2: responseData['scores'],
+      3: responseData['numberOfDetections'],
+    };
+
     return output.values.toList();
   }
 }

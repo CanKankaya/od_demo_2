@@ -5,7 +5,7 @@
 
 const inputSize = 300;
 
-const apiUrl = "http://18.234.85.247:8000/predict/";
+const apiUrl = "https://1af5-37-154-26-251.ngrok-free.app/predict/";
 
 const String modelPath = 'assets/models/ssd_mobilenet.tflite';
 const String labelPath = 'assets/models/labelmap.txt';
