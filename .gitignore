@@ -41,5 +41,6 @@ app.*.map.json
 # Android Studio will place build artifacts here
 /android/app/debug
 /android/app/profile
-constants.dart
 
+# Ignore constants.dart
+/constants.dart
