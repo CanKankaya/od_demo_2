@@ -22,7 +22,7 @@ class RectanglePainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final paint = Paint()..color = Colors.black54;
     final borderPaint = Paint()
-      ..color = Colors.black87
+      ..color = Colors.black54
       ..strokeWidth = 2.0
       ..style = PaintingStyle.stroke;
 

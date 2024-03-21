@@ -16,10 +16,7 @@ class ApiContainer extends StatelessWidget {
       child: SizedBox(
         width: MediaQuery.of(context).size.width * 0.9, // 90% of screen width
         height: 50, // fixed height of 100 pixels
-        // decoration: BoxDecoration(
-        //   color: Colors.black.withOpacity(0.5),
-        //   borderRadius: BorderRadius.circular(16),
-        // ),
+
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:camera/camera.dart';
 
-import 'package:od_demo_2/camera_screen.dart';
+import 'package:od_demo_2/screens/camera_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

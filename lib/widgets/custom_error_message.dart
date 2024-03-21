@@ -28,16 +28,12 @@ void customErrorMessage(
             },
             label: buttonText ?? 'error',
           ),
-          content: Container(
-            padding: const EdgeInsets.all(10),
+          content: SizedBox(
             height: 40,
             width: double.infinity,
-            child: FittedBox(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                errorText ?? 'error',
-                style: const TextStyle(fontSize: 16),
-              ),
+            child: Text(
+              errorText ?? 'error',
+              style: const TextStyle(fontSize: 16),
             ),
           ),
         ),
@@ -60,16 +56,12 @@ void customErrorMessage(
           label: buttonText ?? 'error',
         ),
         behavior: SnackBarBehavior.floating,
-        content: Container(
-          padding: const EdgeInsets.all(10),
+        content: SizedBox(
           height: 40,
           width: double.infinity,
-          child: FittedBox(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              errorText ?? 'error',
-              style: const TextStyle(fontSize: 16),
-            ),
+          child: Text(
+            errorText ?? 'error',
+            style: const TextStyle(fontSize: 16),
           ),
         ),
       ),

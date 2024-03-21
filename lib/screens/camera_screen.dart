@@ -1,15 +1,14 @@
-import 'dart:developer';
+import 'dart:async';
+
+import 'package:connectivity/connectivity.dart';
 import 'package:flutter/material.dart';
 
 import 'package:camera/camera.dart';
-import 'package:image_picker/image_picker.dart';
 
-import 'package:od_demo_2/models/recognition.dart';
-import 'package:od_demo_2/object_detection.dart';
+import 'package:od_demo_2/utils/object_detection.dart';
 import 'package:od_demo_2/widgets/api_container.dart';
-import 'package:od_demo_2/widgets/debug_container.dart';
-import 'package:od_demo_2/widgets/overlay_container.dart';
 import 'package:od_demo_2/widgets/custom_clipper.dart';
+import 'package:od_demo_2/widgets/custom_error_message.dart';
 import 'package:od_demo_2/widgets/simpler_custom_loading.dart';
 
 class CameraScreen extends StatefulWidget {
@@ -26,20 +25,21 @@ class CameraScreen extends StatefulWidget {
 class _CameraScreenState extends State<CameraScreen> {
   late CameraController _controller;
   late Future<void> _initializeControllerFuture;
-  var isLoading = false;
-  var flashMode = FlashMode.off;
+  StreamSubscription<ConnectivityResult>? _connectivitySubscription;
 
-  final imagePicker = ImagePicker();
+  var _isLoading = false;
+  var _flashMode = FlashMode.off;
+  var _isOnline = false;
+
   ObjectDetection? objectDetection;
-  List<Recognition> result = [];
-  List<int> newResult = [];
+  List<int> apiResult = [];
   var timeDiff = const Duration();
-  var debugText = '';
-  var statusCode = 0;
 
   @override
   void dispose() {
     _controller.dispose();
+    _connectivitySubscription?.cancel();
+
     super.dispose();
   }
 
@@ -52,14 +52,24 @@ class _CameraScreenState extends State<CameraScreen> {
       ResolutionPreset.high,
       enableAudio: false,
     );
-    _initializeControllerFuture = _controller.initialize();
+    _initializeControllerFuture = _controller.initialize().then(
+          (value) => _controller.setFocusMode(FocusMode.auto),
+        );
+
+    _connectivitySubscription =
+        Connectivity().onConnectivityChanged.listen((ConnectivityResult result) {
+      setState(() {
+        _isOnline = result != ConnectivityResult.none;
+      });
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color.fromARGB(255, 23, 23, 23),
       appBar: AppBar(
-        backgroundColor: Colors.black26,
+        backgroundColor: Colors.black12,
         title: const Text('Tester'),
       ),
       body: FutureBuilder<void>(
@@ -72,18 +82,10 @@ class _CameraScreenState extends State<CameraScreen> {
                   _controller,
                 ),
                 const OverlayWithRectangleClipping(),
-                ApiContainer(result: newResult),
-                OverlayContainer(result: result),
-                DebugContainer(
-                  debugText: "Status Code: $statusCode\nJson Response: $debugText",
-                ),
+                ApiContainer(result: apiResult),
                 Align(
                   alignment: Alignment.bottomCenter,
                   child: _buildApiButton(),
-                ),
-                Align(
-                  alignment: Alignment.bottomRight,
-                  child: _buildButton(),
                 ),
                 Container(
                   margin: const EdgeInsets.all(4),
@@ -94,7 +96,7 @@ class _CameraScreenState extends State<CameraScreen> {
                         'API Time;',
                         style: TextStyle(
                           color: Color.fromARGB(255, 200, 200, 200),
-                          fontSize: 16,
+                          fontSize: 14,
                         ),
                       ),
                       Text(
@@ -111,6 +113,21 @@ class _CameraScreenState extends State<CameraScreen> {
                   right: 0,
                   child: _buildFlashButton(),
                 ),
+                if (!_isOnline)
+                  Positioned(
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    child: Container(
+                      color: Colors.red,
+                      padding: const EdgeInsets.all(12.0),
+                      child: const Text(
+                        'İnternet bağlantınızı kontrol edin.',
+                        style: TextStyle(color: Colors.white, fontSize: 16),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ),
               ],
             );
           } else {
@@ -121,90 +138,52 @@ class _CameraScreenState extends State<CameraScreen> {
     );
   }
 
-  Widget _buildButton() {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8.0),
-      child: IconButton(
-        iconSize: 50,
-        onPressed: isLoading
-            ? null
-            : () async {
-                newResult = [];
-                timeDiff = const Duration();
-                setState(() {
-                  isLoading = true;
-                });
-                try {
-                  await _initializeControllerFuture;
-                  final image = await _controller.takePicture();
-
-                  result = await objectDetection!.analyseImage(image.path);
-
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    setState(() {
-                      isLoading = false;
-                    });
-                  });
-                } catch (e) {
-                  log(e.toString());
-                }
-              },
-        icon: isLoading
-            ? const SimplerCustomLoader()
-            : const Icon(
-                Icons.construction,
-                color: Color.fromARGB(215, 255, 193, 7),
-              ),
-      ),
-    );
-  }
-
   Widget _buildApiButton() {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8.0),
       child: IconButton(
-        iconSize: 50,
-        onPressed: isLoading
+        color: const Color.fromARGB(215, 255, 193, 7),
+        iconSize: 60,
+        onPressed: _isLoading || !_isOnline
             ? null
             : () async {
-                result = [];
                 setState(() {
-                  isLoading = true;
+                  _isLoading = true;
                 });
 
                 await _initializeControllerFuture;
                 final image = await _controller.takePicture();
 
                 var startTime = DateTime.now();
-                var tempResult = await objectDetection!.runInferenceOnAPI(image.path);
-                newResult = tempResult[0];
-                debugText = tempResult[1].toString();
-                statusCode = tempResult[2];
-
+                var tempResult = await objectDetection?.runInferenceOnAPI(image.path);
+                if (tempResult != null) {
+                  setState(() {
+                    apiResult = tempResult;
+                  });
+                } else {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    customErrorMessage(
+                      context,
+                      'Server\'a bağlanırken bir hata oluştu. Lütfen tekrar deneyin.',
+                      '',
+                      null,
+                      false,
+                    );
+                  });
+                }
                 var endTime = DateTime.now();
                 timeDiff = endTime.difference(startTime);
 
-                //TODO: Debugging, Remove later
-                if (newResult.isEmpty) {
-                  newResult.add(1);
-                  newResult.add(2);
-                  newResult.add(3);
-                  newResult.add(4);
-                  newResult.add(5);
-                  newResult.add(6);
-                }
-
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   setState(() {
-                    isLoading = false;
+                    _isLoading = false;
                   });
                 });
               },
-        icon: isLoading
+        icon: _isLoading
             ? const SimplerCustomLoader()
             : const Icon(
                 Icons.camera,
-                color: Color.fromARGB(215, 255, 193, 7),
               ),
       ),
     );
@@ -216,21 +195,21 @@ class _CameraScreenState extends State<CameraScreen> {
       child: IconButton(
         iconSize: 30,
         onPressed: () async {
-          if (flashMode == FlashMode.off) {
+          if (_flashMode == FlashMode.off) {
             await _controller.setFlashMode(FlashMode.torch);
             setState(() {
-              flashMode = FlashMode.torch;
+              _flashMode = FlashMode.torch;
             });
           } else {
             await _controller.setFlashMode(FlashMode.off);
             setState(() {
-              flashMode = FlashMode.off;
+              _flashMode = FlashMode.off;
             });
           }
         },
         icon: Icon(
-          flashMode == FlashMode.off ? Icons.flash_off : Icons.flash_on,
-          color: flashMode == FlashMode.off ? Colors.white54 : Colors.amber,
+          _flashMode == FlashMode.off ? Icons.flash_off : Icons.flash_on,
+          color: _flashMode == FlashMode.off ? Colors.white54 : Colors.amber,
         ),
       ),
     );
