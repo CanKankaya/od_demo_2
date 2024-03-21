@@ -8,6 +8,10 @@ import 'package:od_demo_2/constants.dart';
 import 'package:od_demo_2/models/recognition.dart';
 import 'package:tflite_flutter/tflite_flutter.dart';
 
+import 'package:http_parser/http_parser.dart';
+
+//global variable notifier
+
 class ObjectDetection {
   Interpreter? _interpreter;
   List<String>? _labels;
@@ -160,6 +164,7 @@ class ObjectDetection {
 
     // Set output tensor
     // Locations: [1, 10, 4]
+
     // Classes: [1, 10],
     // Scores: [1, 10],
     // Number of detections: [1]
@@ -177,36 +182,39 @@ class ObjectDetection {
     return output.values.toList();
   }
 
-  Future<List<dynamic>> _runInferenceOnAPI(
-    List<List<List<num>>> imageMatrix,
-  ) async {
-    log('Running inference...');
+  Future<Map<int, dynamic>> runInferenceOnAPI(String imagePath) async {
+    log('Running inference on API...');
 
-    // Set input tensor [1, 300, 300, 3]
-    final input = [imageMatrix];
+    var request = http.MultipartRequest('POST', Uri.parse(apiUrl))
+      ..files.add(await http.MultipartFile.fromPath(
+        'file',
+        imagePath,
+        contentType: MediaType('image', 'jpeg'),
+      ));
 
-    var response = await http.post(
-      Uri.parse(apiUrl),
-      headers: {"Content-Type": "application/json"},
-      body: jsonEncode({"photo": input}),
-    );
+    var response = await request.send();
 
-    // Parse the response
-    var responseData = jsonDecode(response.body);
-    log(response.statusCode.toString());
+    if (response.statusCode == 200) {
+      log('Response: 200');
+      var responseData = await response.stream.toBytes();
 
-    // Set output tensor
-    // Locations: [1, 10, 4]
-    // Classes: [1, 10],
-    // Scores: [1, 10],
-    // Number of detections: [1]
-    final output = {
-      0: responseData['locations'],
-      1: responseData['classes'],
-      2: responseData['scores'],
-      3: responseData['numberOfDetections'],
-    };
-
-    return output.values.toList();
+      var responseString = String.fromCharCodes(responseData);
+      log(responseString);
+      var jsonResponse = jsonDecode(responseString);
+      if (jsonResponse is Map<String, dynamic> && jsonResponse['prediction'] is List) {
+        return <int, dynamic>{
+          0: List<int>.from(
+            jsonResponse['prediction'].map((x) => x as int),
+          ),
+          1: responseString,
+          2: response.statusCode
+        };
+      } else {
+        throw Exception('Invalid prediction data');
+      }
+    } else {
+      log('Error: ${response.statusCode}');
+      throw Exception('Failed to run inference on API');
+    }
   }
 }

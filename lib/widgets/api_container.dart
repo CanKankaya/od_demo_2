@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 
-import 'package:od_demo_2/models/recognition.dart';
-
-class OverlayContainer extends StatelessWidget {
-  const OverlayContainer({
+class ApiContainer extends StatelessWidget {
+  const ApiContainer({
     Key? key,
     required this.result,
   }) : super(key: key);
 
-  final List<Recognition> result;
+  final List<int> result;
 
   @override
   Widget build(BuildContext context) {
@@ -39,7 +37,7 @@ class OverlayContainer extends StatelessWidget {
                   ),
                   child: Center(
                     child: Text(
-                      item.label,
+                      item.toString(),
                       style: const TextStyle(
                         color: Color.fromARGB(255, 200, 200, 200),
                         fontSize: 16,
