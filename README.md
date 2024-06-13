@@ -4,4 +4,5 @@ Live object detection example
 
 ## Getting Started
 
-The project is a live object detection system using device's camera stream
+This is a simple project that implements Google's AI Kit, using object detection
+
