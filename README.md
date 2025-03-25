@@ -19,7 +19,12 @@
 
 
 
+## Latest version
+- Added more detection analysis
+- If the camera doesnt work correctly for you, change the cameras[1] in homeview to cameras[0]
+<img src="https://github.com/user-attachments/assets/61884de0-5ff2-4db9-a319-f70f442b38e9" width="400" />
+
+
+## Old version
 <img src="https://github.com/user-attachments/assets/a0578fa1-e156-4da7-b53e-a155d22c6d83" width="400" />
-
-
    
