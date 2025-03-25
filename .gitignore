@@ -45,3 +45,7 @@ app.*.map.json
 
 # Ignore constants.dart
 /constants.dart
+
+# Ignore assets
+/assets/
+
