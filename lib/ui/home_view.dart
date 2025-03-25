@@ -13,10 +13,7 @@ class HomeView extends StatelessWidget {
       key: GlobalKey(),
       backgroundColor: Colors.black,
       appBar: AppBar(
-        title: Image.asset(
-          'assets/images/tfl_logo.png',
-          fit: BoxFit.contain,
-        ),
+        title: const Text('Live Object Detection TFLite'),
       ),
       body: const DetectorWidget(),
     );
